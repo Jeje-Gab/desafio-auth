@@ -1,20 +1,19 @@
+version: "3.9"
 services:
   db:
     image: mysql:8.0
     container_name: desafio_mysql
-    restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password   # opcional
+    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: desafio_auth
       MYSQL_USER: app
       MYSQL_PASSWORD: app
-      # MYSQL_ROOT_HOST: "%"   # opcional, se quiser permitir root remoto
     ports:
-      - "3306:3306"
+      - "3306:3306"             # se conflitar no host, troque para "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/scripts/sql:/docker-entrypoint-initdb.d:ro   # <-- roda 001_init.sql na primeira vez
+      - ./backend/scripts/sql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -proot || exit 1"]
       interval: 5s
@@ -26,7 +25,35 @@ services:
     container_name: desafio_adminer
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8080"             # UI do banco em http://localhost:8081
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build: ./backend            # usa backend/Dockerfile
+    container_name: desafio_backend
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db               # usa o serviço 'db' na rede do compose
+      DB_PORT: 3306
+      CORS_ORIGIN: http://localhost:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: ./frontend       # usa frontend/Dockerfile (nginx)
+      args:
+        VITE_API_URL: "http://localhost:3001"  # URL que o browser vai chamar
+    container_name: desafio_frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"               # app web em http://localhost:8080
 
 volumes:
   mysql_data:

@@ -112,7 +112,7 @@ VITE_API_URL=http://localhost:3001
 Na **raiz** do projeto, execute:
 
 ```bash
-docker compose up --build -d
+docker compose up -d
 ```
 
 ---
