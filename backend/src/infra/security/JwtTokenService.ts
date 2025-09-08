@@ -1,15 +1,18 @@
-import jwt from "jsonwebtoken";
+import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 import { TokenService } from "../../core/ports/TokenService";
 import { env } from "../../config/env";
 
 export class JwtTokenService implements TokenService {
   sign(userId: number, expiresIn: string): string {
-    return jwt.sign({ sub: userId }, env.JWT_SECRET, { expiresIn });
+    const secret: Secret = env.JWT_SECRET as Secret;
+    const opts: SignOptions = { expiresIn: expiresIn as SignOptions["expiresIn"] };
+    return jwt.sign({ sub: userId }, secret, opts);
   }
   verify(token: string): { sub: number } | null {
     try {
-      const payload = jwt.verify(token, env.JWT_SECRET) as any;
-      return { sub: payload.sub };
+      const secret: Secret = env.JWT_SECRET as Secret;
+      const payload = jwt.verify(token, secret) as any;
+      return { sub: Number(payload.sub) };
     } catch {
       return null;
     }
